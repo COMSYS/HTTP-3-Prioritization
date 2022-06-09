@@ -30,7 +30,8 @@ The prio hint file has the form ```<uri>#<resource_type>#<chrome_prio_class>#<fi
 
 ### Adapted Chromium / Browsertime Docker Container
 
-```browsertime/docker``` contains our adapted chromium / browsertime docker container. Please compile chromium 95.0.4638.54 in the chromium subdirectory with the ```chromium_patch``` applied to enable disabling the fetch credentials.
+```browsertime/docker``` contains our adapted chromium / browsertime docker container. Please compile chromium 95.0.4638.54 in the chromium subdirectory with the 
+```credentials_flag.patch``` patch applied to enable disabling the fetch credentials flag.
 Afterwards, you can create the image using ```./build.sh```.
 
 ### Orchestration / Testbed Software
