@@ -1,0 +1,2 @@
+{"general":{"repeat": 1,"dir":"output"}}
+{"bwdown": 10, "rtt": 100, "bdp": 1, "loss": 0.0, "cc": "cubic", "priomode": "firefoxext", "website": "www.columbia.edu", "workdir": "mm/record/www.columbia.edu/", "priofile": "mm/priorities/www.columbia.edu.csv"}
