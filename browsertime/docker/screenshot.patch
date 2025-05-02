@@ -1,0 +1,12 @@
+diff --git a/content/browser/devtools/devtools_traceable_screenshot.h b/content/browser/devtools/devtools_traceable_screenshot.h
+index 0f90cb1c83..3bdaf3cefa 100644
+--- a/content/browser/devtools/devtools_traceable_screenshot.h
++++ b/content/browser/devtools/devtools_traceable_screenshot.h
+@@ -15,7 +15,7 @@ namespace content {
+ class DevToolsTraceableScreenshot
+     : public base::trace_event::ConvertableToTraceFormat {
+  public:
+-  static constexpr int kMaximumNumberOfScreenshots = 450;
++  static constexpr int kMaximumNumberOfScreenshots = 4500;
+
+   static base::subtle::Atomic32 GetNumberOfInstances();

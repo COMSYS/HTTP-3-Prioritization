@@ -1,13 +1,20 @@
-from mahimahi import mm_files
-import json 
-import sys
-from h2prio.resource_tools import get_resource_types, classify_chrome_prio, classify_firefox_prio, get_resource_streams
 import argparse
+import json
+import sys
+
+from testbed.util import mm_files
+from testbed.util.resource_tools import (
+    classify_chrome_prio,
+    classify_firefox_prio,
+    get_resource_streams,
+    get_resource_types,
+)
+
 parser = argparse.ArgumentParser()
 
-parser.add_argument('--workdir')
-parser.add_argument('--input')
-parser.add_argument('--output')
+parser.add_argument("--workdir")
+parser.add_argument("--input")
+parser.add_argument("--output")
 
 args = parser.parse_args()
 
@@ -15,32 +22,37 @@ assert args.workdir is not None
 assert args.input is not None
 assert args.output is not None
 
-workdir = args.workdir #mahimahi workdir
-output = args.output # output file
-input = args.input # input json from main.py
+workdir = args.workdir  # mahimahi workdir
+output = args.output  # output file
+input = args.input  # input json from main.py
 
 available_pages = mm_files.preload_files(workdir)
 priorities = json.load(open(input))
 
-available_urls = [page["request_host"] + page["request_uri"] for page in available_pages]
+available_urls = [
+    page["request_host"] + page["request_uri"] for page in available_pages
+]
 available_fit = {}
 
-def get_diff(a,b):
+
+def get_diff(a, b):
     out = []
     for key in set(a.keys()) | set(b.keys()):
         if key not in a:
-            out.append({"key":key, "b":b[key]})
+            out.append({"key": key, "b": b[key]})
         elif key not in b:
-            out.append({"key":key, "a":a[key]})
+            out.append({"key": key, "a": a[key]})
         elif a[key] != b[key]:
-            out.append({"key":key, "a":a[key],"b":b[key]})
+            out.append({"key": key, "a": a[key], "b": b[key]})
     return out
 
+
 for uri in available_urls:
-    keyuri = uri.split('?',1)[0]
+    keyuri = uri.split("?", 1)[0]
     if not keyuri in available_fit:
         available_fit[keyuri] = []
     available_fit[keyuri].append(uri)
+
 
 def best_fit(a, al):
     best_fit_item = None
@@ -52,11 +64,12 @@ def best_fit(a, al):
             best_fit = fit
     return best_fit_item
 
+
 ff_classes = []
 chrome_classes = []
 types = []
 
-#boil urls down to mahimahi urls
+# boil urls down to mahimahi urls
 for priority in priorities:
     if priority["firefoxlog"] is None:
         print("firefox missing, skip", file=sys.stderr)
@@ -73,29 +86,29 @@ for priority in priorities:
     chrome = {}
     for stream in chrome_streams:
         uri = stream["url"]
-        keyuri = uri.split('?',1)[0]
+        keyuri = uri.split("?", 1)[0]
         if keyuri in available_fit:
             newuri = best_fit(uri, available_fit[keyuri])
             chrome[newuri] = stream
         else:
             if stream["error"] != "404":
                 print(keyuri, stream, "unknown", file=sys.stderr)
-    
+
     ff = {}
     for stream in firefox_streams:
         uri = stream["url"]
-        keyuri = uri.split('?',1)[0]
+        keyuri = uri.split("?", 1)[0]
         if keyuri in available_fit:
             newuri = best_fit(uri, available_fit[keyuri])
             ff[newuri] = stream
         else:
             if stream["error"] != "404":
                 print(keyuri, stream, "unknown", file=sys.stderr)
-    
+
     t = {}
     for uri, p in chrome_types.items():
         if uri.startswith("http"):
-            keyuri = uri.split('?',1)[0].split("//",1)[1]
+            keyuri = uri.split("?", 1)[0].split("//", 1)[1]
             if keyuri in available_fit:
                 newuri = best_fit(uri, available_fit[keyuri])
                 t[newuri] = p
@@ -104,6 +117,7 @@ for priority in priorities:
     chrome_classes.append(classify_chrome_prio(chrome))
     types.append(t)
 
+
 def fuse_ff(dicts):
     mapping = {
         "urgent-start": 6,
@@ -111,7 +125,7 @@ def fuse_ff(dicts):
         "followers": 4,
         "unblocked": 3,
         "background": 2,
-        "speculative": 1
+        "speculative": 1,
     }
     out = {}
     keys = set()
@@ -127,6 +141,7 @@ def fuse_ff(dicts):
                 a["w"] = b["w"]
         out[key] = a
     return out
+
 
 def fuse_type(dicts):
     out = {}
@@ -146,6 +161,7 @@ def fuse_type(dicts):
         out[key] = a
     return out
 
+
 def fuse_chrome(dicts):
     mapping = {
         "highest": 7,
@@ -154,7 +170,7 @@ def fuse_chrome(dicts):
         "low": 4,
         "lowest": 3,
         "idle": 2,
-        "throttled": 1
+        "throttled": 1,
     }
     out = {}
     for key in set([k for d in dicts for k in d.keys()]):
@@ -166,13 +182,14 @@ def fuse_chrome(dicts):
         out[key] = a
     return out
 
+
 ff_classes = fuse_ff(ff_classes)
 chrome_classes = fuse_chrome(chrome_classes)
 types = fuse_type(types)
 
 out = []
 
-for uri in (set(ff_classes.keys()) | set(chrome_classes.keys())):
+for uri in set(ff_classes.keys()) | set(chrome_classes.keys()):
 
     firefox_prio_class = "background"
     firefox_prio_weight = 12
@@ -185,12 +202,21 @@ for uri in (set(ff_classes.keys()) | set(chrome_classes.keys())):
 
     if uri in chrome_classes:
         chrome_prio_class = chrome_classes[uri]
-    
+
     if uri in types:
         resource_type = types[uri]
 
     assert not "#" in uri, uri
-    out.append("GET:%s#%s#%s#%s#%d"%(uri, resource_type, chrome_prio_class, firefox_prio_class, firefox_prio_weight))
-    
+    out.append(
+        "GET:%s#%s#%s#%s#%d"
+        % (
+            uri,
+            resource_type,
+            chrome_prio_class,
+            firefox_prio_class,
+            firefox_prio_weight,
+        )
+    )
+
 with open(output, "w") as f:
     f.write("\n".join(sorted(out)))

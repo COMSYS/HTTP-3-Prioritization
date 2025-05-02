@@ -1,6 +1,5 @@
-import json
 import csv
-import traceback
+import json
 
 firefox_phantom_nodes = {
     3: "leaders",
@@ -8,7 +7,7 @@ firefox_phantom_nodes = {
     5: "unblocked",
     7: "background",
     9: "speculative",
-    13: "urgent-start"
+    13: "urgent-start",
 }
 
 chrome_weight_buckets = {
@@ -18,8 +17,9 @@ chrome_weight_buckets = {
     147: "low",
     110: "lowest",
     74: "idle",
-    37: "throttled"
+    37: "throttled",
 }
+
 
 def get_resource_streams(content):
     streams = []
@@ -29,15 +29,24 @@ def get_resource_streams(content):
 
             url = entries[5].split(" ")[1]
             method = entries[5].split(" ")[0]
-            url = url.replace("\\x7e","~")
-            url = url.replace("\\x7d","}")
+            url = url.replace("\\x7e", "~")
+            url = url.replace("\\x7d", "}")
             error = entries[6]
             host = entries[12]
             weight = entries[10]
             parent = entries[11]
-            streams.append({"w":int(weight), "dep": int(parent), "url": host + url, "method": method, "error": error})
+            streams.append(
+                {
+                    "w": int(weight),
+                    "dep": int(parent),
+                    "url": host + url,
+                    "method": method,
+                    "error": error,
+                }
+            )
 
     return streams
+
 
 def get_resource_prio(content):
     streams = get_resource_streams(content)
@@ -46,14 +55,14 @@ def get_resource_prio(content):
 
     for stream in streams:
         if not "url" in stream:
-            #firefox creates stream without resources
+            # firefox creates stream without resources
             continue
         url = stream["url"]
         if url in prio:
             assert stream["w"] == prio[url]["w"]
         del stream["url"]
         prio[url] = stream
-    
+
     return prio
 
 
@@ -72,8 +81,9 @@ chrome_resource_map = {
     "service_worker": "js",
     "worker": "js",
     "TextTrack": "image",
-    "iframe": "iframe"
+    "iframe": "iframe",
 }
+
 
 def get_resource_types(content):
     types = {}
@@ -87,7 +97,7 @@ def get_resource_types(content):
             if type in chrome_resource_map:
                 types[url] = chrome_resource_map[type]
             else:
-                assert False, ("unknown type %s" % type)
+                assert False, "unknown type %s" % type
         elif "targetInfo" in params:
             targetInfo = params["targetInfo"]
             url = targetInfo["url"]
@@ -96,7 +106,7 @@ def get_resource_types(content):
                 if type in chrome_resource_map:
                     types[url] = chrome_resource_map[type]
                 else:
-                    assert False, ("unknown type %s" % type)
+                    assert False, "unknown type %s" % type
     return types
 
 
@@ -106,8 +116,12 @@ def classify_chrome_prio(chrome_prio):
         if prio["w"] in chrome_weight_buckets:
             out[url] = chrome_weight_buckets[prio["w"]]
         else:
-            assert False, (url,prio)
+            assert False, (url, prio)
     return out
 
+
 def classify_firefox_prio(firefox_prio):
-    return {url:{"c":firefox_phantom_nodes[prio["dep"]],"w":prio["w"]} for url, prio in firefox_prio.items()}
+    return {
+        url: {"c": firefox_phantom_nodes[prio["dep"]], "w": prio["w"]}
+        for url, prio in firefox_prio.items()
+    }
